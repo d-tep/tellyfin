@@ -1,0 +1,5 @@
+*.wgt binary
+*.sh text eol=lf
+*.py text eol=lf
+*.cjs text eol=lf
+*.md text eol=lf

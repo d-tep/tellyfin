@@ -1,0 +1,50 @@
+/* Static TV styling: keep focus visible without decorative rendering work. */
+.layout-tv {
+    --abyss-backdrop-blur: 0px !important;
+    --abyss-glass-blur: 0px !important;
+}
+.layout-tv *,
+.layout-tv *::before,
+.layout-tv *::after {
+    animation: none !important;
+    transition: none !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    scroll-behavior: auto !important;
+}
+/* Leave scroller and positioning transforms intact; remove decorative scaling. */
+.layout-tv .card .cardBox,
+.layout-tv .card .cardScalable,
+.layout-tv .card .cardImageContainer,
+.layout-tv .card .cardImage,
+.layout-tv .card .cardOverlayContainer,
+.layout-tv .card .cardOverlayButtonIcon,
+.layout-tv .card .cardOverlayFab-primary,
+.layout-tv .emby-button.show-focus:focus,
+.layout-tv .headerButton.show-focus:focus,
+.layout-tv .emby-tab-button .emby-button-foreground,
+.layout-tv #itemDetailPage .detailButton,
+.layout-tv #itemDetailPage .detailButton:hover {
+    transform: none !important;
+    will-change: auto !important;
+}
+.layout-tv .card .cardBox.visualCardBox,
+.layout-tv .card .cardBox:not(.visualCardBox) .cardScalable {
+    border: 0 !important;
+}
+/* Outline does not resize the card or shift neighbouring tiles. */
+.layout-tv .card:focus > .cardBox,
+.layout-tv .card:focus-within > .cardBox {
+    outline: 3px solid rgb(var(--abyss-accent, 245, 245, 247)) !important;
+    outline-offset: -3px !important;
+}
+.layout-tv .backdropImage,
+.layout-tv .blurhash-canvas {
+    will-change: auto !important;
+}
+.layout-tv .skinHeader .headerButton.show-focus:focus {
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+}

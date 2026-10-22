@@ -1,0 +1,5 @@
+/* Keep TV library tabs within the space between the header controls. */
+.layout-tv .skinHeader .headerTabs.sectionTabs .emby-tab-button {
+    font-size: .85em !important;
+    padding: .45em .65em !important;
+}

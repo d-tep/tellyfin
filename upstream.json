@@ -1,0 +1,20 @@
+{
+  "name": "Tellyfin",
+  "version": "0.1.0",
+  "basedOnCustomBuild": "0.1.23",
+  "jellyfinWeb": {
+    "url": "https://github.com/jellyfin/jellyfin-web",
+    "commit": "61b1f890365ad15138e943e694af723c1d47df2a",
+    "version": "12.2"
+  },
+  "jellyfinTizen": {
+    "url": "https://github.com/jellyfin/jellyfin-tizen",
+    "commit": "31408c121e34e73c9f50c4e201c05e95140675df"
+  },
+  "abyss": {
+    "url": "https://github.com/AumGupta/abyss-jellyfin",
+    "commit": "2f809171ed7f3a34b5e78297608b5f2b63dd3f0f",
+    "license": "MIT",
+    "adaptation": "Offline system text fonts and bundled Jellyfin material icons; TV overrides applied last"
+  }
+}
