@@ -26,6 +26,8 @@ css = css.replace(hide, '');
 css += `
 /* Chromium 76: explicit grid spacing, percentage margins, static focus. */
 html.layout-tv.manual-guide-input-active { font-size:var(--manual-guide-input-font-size) !important; }
+/* Abyss pins submit buttons with position:sticky; the keyboard's shrunken viewport would drag them over the form. */
+html.layout-tv.manual-guide-input-active .button-submit, html.layout-tv.manual-guide-input-active form button[type="submit"].MuiButton-root { position:static !important; }
 .layout-tv .manual-guide-toolbar, .layout-tv .tvGuideHeader .guideHeaderDateSelection { margin-left:3.3%; margin-right:3.3%; }
 .layout-tv .manual-guide-toolbar { display:grid; grid-template-columns:minmax(10em, 1fr) minmax(7em, .65fr) minmax(7em, .65fr) auto auto auto; grid-gap:.65em; --manual-guide-control-height:2.6rem; }
 .layout-tv .manual-guide-toolbar label { min-width:0; }

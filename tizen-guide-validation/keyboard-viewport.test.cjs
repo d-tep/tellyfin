@@ -112,6 +112,22 @@ test('unrelated input does not change TV font styling', () => {
     assert.equal(h.properties.size, 0);
 });
 
+test('sign-in and server address fields keep the TV font size while the keyboard is open', () => {
+    const h = harness();
+    const keyboardSelector = /^input:not\(\[type=checkbox\]\)/;
+    const field = { readOnly: false, hasAttribute: () => false, setAttribute() {}, matches: selector => keyboardSelector.test(selector), closest: () => null };
+    h.focus(field);
+    h.resize(568);
+    assert.equal(h.properties.get('--manual-guide-input-font-size'), '27px');
+    assert.ok(h.classes.has('manual-guide-input-active'));
+    assert.equal(field.readOnly, false);
+    h.document.activeElement = null;
+    h.emit('document', 'focusout', { target: field });
+    h.resize(1080);
+    assert.equal(h.classes.size, 0);
+    assert.equal(h.properties.size, 0);
+});
+
 test('focus waits for Select and Back ends editing without leaving the field', () => {
     const h = harness();
     const field = h.input();
@@ -182,4 +198,15 @@ test('input observer prepares added fields and nested fields without scanning ex
     assert.equal(nested.readOnly, true);
     assert.equal(existing.readOnly, false);
     assert.equal(h.documentScans(), scans);
+});
+
+test('sign-in page skips the server splash backdrop', () => {
+    const h = harness();
+    const pageClasses = new Set(['page', 'standalonePage', 'backdropPage']);
+    const page = { id: 'loginPage', classList: { remove: name => pageClasses.delete(name) } };
+    h.emit('document', 'pageshow', { target: page });
+    assert.equal(pageClasses.has('backdropPage'), false);
+    const homeClasses = new Set(['backdropPage']);
+    h.emit('document', 'pageshow', { target: { id: 'indexPage', classList: { remove: name => homeClasses.delete(name) } } });
+    assert.equal(homeClasses.has('backdropPage'), true);
 });

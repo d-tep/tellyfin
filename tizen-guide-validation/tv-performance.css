@@ -30,15 +30,50 @@
     transform: none !important;
     will-change: auto !important;
 }
-.layout-tv .card .cardBox.visualCardBox,
-.layout-tv .card .cardBox:not(.visualCardBox) .cardScalable {
+.layout-tv .card.show-focus .cardBox.visualCardBox,
+.layout-tv .card.show-focus .cardBox:not(.visualCardBox) .cardScalable,
+.layout-tv .card.show-focus:focus .cardBox.visualCardBox,
+.layout-tv .card.show-focus:focus .cardBox:not(.visualCardBox) .cardScalable {
     border: 0 !important;
 }
-/* Outline does not resize the card or shift neighbouring tiles. */
+.layout-tv .card .cardBox > .cardText {
+    box-sizing: border-box;
+    padding: .2em .5em !important;
+    line-height: 1.4 !important;
+}
+.layout-tv .card .cardBox > .cardText:last-child {
+    padding-bottom: .4em !important;
+}
+/* Reserve the frame inset even when unfocused so artwork stays inside it. */
+.layout-tv .card > .cardBox,
 .layout-tv .card:focus > .cardBox,
 .layout-tv .card:focus-within > .cardBox {
-    outline: 3px solid rgb(var(--abyss-accent, 245, 245, 247)) !important;
-    outline-offset: -3px !important;
+    position: relative;
+    padding: 5px !important;
+    border-radius: 24px !important;
+    overflow: hidden;
+    outline: none !important;
+}
+.layout-tv .card > .cardBox::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    box-sizing: border-box;
+    border: 5px solid transparent;
+    border-radius: inherit;
+    pointer-events: none;
+    z-index: 5;
+}
+.layout-tv .card:focus > .cardBox::after,
+.layout-tv .card:focus-within > .cardBox::after {
+    border-color: rgb(var(--abyss-accent, 245, 245, 247));
+}
+.layout-tv .card > .cardBox > .cardScalable {
+    overflow: hidden;
+    border-radius: 19px !important;
 }
 .layout-tv .backdropImage,
 .layout-tv .blurhash-canvas {

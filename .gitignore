@@ -27,7 +27,7 @@ __pycache__/
 author-signature.xml
 signature1.xml
 *.wgt
-!releases/Tellyfin-0.1.0.wgt
+!releases/Tellyfin-*.wgt
 *.zip
 config/
 cache/

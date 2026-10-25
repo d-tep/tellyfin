@@ -80,6 +80,26 @@
         console.log.apply(console, arguments);
     }
 
+    function buildTizenDeviceProfile(profileBuilder, options) {
+        var profile = profileBuilder(options);
+
+        // New web clients ignore enableMkvProgressive; keep the TV's remux requirement.
+        profile.DirectPlayProfiles = profile.DirectPlayProfiles.map(function (directProfile) {
+            if (directProfile.Type !== 'Video' || !directProfile.Container) {
+                return directProfile;
+            }
+
+            var containers = directProfile.Container.split(',').filter(function (container) {
+                return container.trim().toLowerCase() !== 'mkv';
+            });
+            return Object.assign({}, directProfile, { Container: containers.join(',') });
+        }).filter(function (directProfile) {
+            return directProfile.Container !== '';
+        });
+
+        return profile;
+    }
+
     window.NativeShell = {
         AppHost: {
             init: function () {
@@ -121,12 +141,12 @@
 
             getDeviceProfile: function (profileBuilder) {
                 postMessage('AppHost.getDeviceProfile');
-                return profileBuilder({ enableMkvProgressive: false, enableSsaRender: true });
+                return buildTizenDeviceProfile(profileBuilder, { enableMkvProgressive: false, enableSsaRender: true });
             },
 
             getSyncProfile: function (profileBuilder) {
                 postMessage('AppHost.getSyncProfile');
-                return profileBuilder({ enableMkvProgressive: false });
+                return buildTizenDeviceProfile(profileBuilder, { enableMkvProgressive: false });
             },
 
             screen: function () {

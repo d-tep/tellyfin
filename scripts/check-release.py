@@ -11,7 +11,8 @@ import zipfile
 import xml.etree.ElementTree as ET
 
 ROOT = Path(__file__).resolve().parents[1]
-PACKAGE = ROOT / 'releases/Tellyfin-0.1.0.wgt'
+VERSION = ET.parse(ROOT / 'jellyfin-tizen-fixed/config.xml').getroot().get('version')
+PACKAGE = ROOT / f'releases/Tellyfin-{VERSION}.wgt'
 PATTERNS = {
     'private key': rb'-----BEGIN (?:[A-Z0-9]+ )?PRIVATE KEY-----',
     'GitHub token': rb'\b(?:gh[pousr]_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,})\b',
@@ -72,11 +73,14 @@ def check(write_checksum=False):
             issues.extend(scan(name, data))
         required = {'config.xml', 'www/index.html', 'www/ui/tellyfin-theme.css',
                     'www/ui/manual-guide.js', 'www/ui/home-library-navigation.js',
+                    'www/ui/home-banner.js', 'www/ui/home-banner.css',
                     'author-signature.xml', 'signature1.xml', 'www/licenses/ABYSS-LICENSE'}
         for missing in required - set(names):
             issues.append((missing, 'required asset missing'))
         config = ET.fromstring(archive.read('config.xml'))
         ns = {'w': 'http://www.w3.org/ns/widgets', 't': 'http://tizen.org/ns/widgets'}
+        if config.get('version') != VERSION:
+            issues.append(('config.xml', 'packaged version does not match source'))
         if config.find('w:name', ns).text != 'Tellyfin' or config.find('t:application', ns).get('id') != 'TellyfinTV.Tellyfin':
             issues.append(('config.xml', 'unexpected identity'))
         theme = archive.read('www/ui/tellyfin-theme.css').decode()

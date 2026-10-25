@@ -4,11 +4,11 @@ An **unofficial Jellyfin client for Samsung Tizen TVs**, combining a modified
 Jellyfin Web 12.2 client, the Tizen wrapper, a locally bundled Abyss theme and
 remote-control/guide improvements. It is not affiliated with Jellyfin or Samsung.
 
-**Release: 0.1.0**, based on the custom guide build 0.1.23.
+**Release: 0.1.3**, based on the custom guide build 0.1.33.
 
 ## Download and install
 
-The distributable is [Tellyfin-0.1.0.wgt](releases/Tellyfin-0.1.0.wgt).
+The distributable is [Tellyfin-0.1.3.wgt](releases/Tellyfin-0.1.3.wgt).
 Verify its SHA-256 against [SHA256SUMS](releases/SHA256SUMS).
 
 You need a Samsung **Tizen** TV, a computer with the Tizen Studio CLI and SDB
@@ -26,7 +26,7 @@ Samsung Certificate Extension may be needed to create your own signing profile.
    ```sh
    sdb connect TV_IP:26101
    sdb devices
-   tizen install -n Tellyfin-0.1.0.wgt -s TV_IP:26101 -- releases
+   tizen install -n Tellyfin-0.1.3.wgt -s TV_IP:26101 -- releases
    tizen run -p TellyfinTV.Tellyfin -s TV_IP:26101
    ```
 
@@ -73,8 +73,8 @@ is changed.
 
 The theme is pinned to the Abyss revision in [upstream.json](upstream.json).
 It uses system text fonts and Jellyfin's bundled Material Icons instead of
-fetching Google fonts or icon fonts from a CDN. There is no packaged Spotlight
-banner. The server is still needed for authentication, media and API responses;
+fetching Google fonts or icon fonts from a CDN. Abyss's separate Spotlight
+add-on is not packaged; Home uses Tellyfin's lightweight Continue Watching banner. The server is still needed for authentication, media and API responses;
 "bundled/offline theme" does not mean offline playback.
 
 ## Features and controls
@@ -91,7 +91,11 @@ banner. The server is still needed for authentication, media and API responses;
   an option. Back closes a dropdown before cancelling its parent dialog.
 - Search and recording inputs wait for **Select/click** to open the keyboard.
   While editing, arrows remain keyboard controls; Back/Done returns to navigation.
-- Guide, recording and global search keep their size when the TV keyboard opens.
+- The interface keeps its size when the TV keyboard opens on any text field,
+  including server address, sign-in, search, recording and settings fields.
+  Sign In and Save buttons stay in place instead of jumping up over the form.
+- The sign-in screen uses a plain background and skips the server's custom
+  splash image; the server's branding setting is left unchanged.
 - Explicit manual recording controls for channels without guide data. Use
   **Save recording** to schedule; Enter in a text field does not implicitly save.
 - Home library shortcuts, stable header focus, static focus outlines and no
@@ -99,6 +103,18 @@ banner. The server is still needed for authentication, media and API responses;
   card in the next visible non-empty row; the final row does not wrap.
 - Guide updates share channel-header lookups, skip hidden cached pages and
   avoid repeated whole-document input scans.
+- Up/Down through guide rows keeps the guide at the same time. Selecting a long
+  programme no longer pulls the view hours ahead or behind.
+- Home shows a **Continue Watching banner**: the latest five titles (Next Up if
+  empty), artwork on the right two-thirds, title/synopsis/progress on the left,
+  Resume and Details, and dot navigation whose active marker is a short line.
+  Selecting a dot changes the slide. Slides rotate every 10 seconds, pausing
+  while a banner control is focused. Nothing plays until you choose Resume.
+- Tiles have a single rounded focus frame that encloses the artwork and title
+  without clipping text.
+- Video direct play excludes MKV, as the Tizen wrapper always intended, so
+  MKV files are remuxed by the server instead of stalling the TV's native
+  player. Audio/video are copied when compatible rather than re-encoded.
 
 Names, counts and available Home rows depend on the server and user permissions.
 The application respects the configured Home sections rather than forcing a
@@ -113,6 +129,18 @@ remain usable. No plugin binary, provider subscription or provider configuration
 is included here. The full custom plugin fork is a separate server-side project.
 
 ## Compatibility and validation
+
+### Slow movie startup on the server side
+
+If playback stays on the loading screen for a long time, especially for remote
+`.strm` items, the delay is usually on the server, not the TV. Two optional server
+changes helped substantially in testing (not applied by Tellyfin):
+
+- Disable unneeded metadata fetchers for that library in Jellyfin's library
+  settings, which otherwise refresh remote items when playback starts.
+- Bound FFmpeg's media probe, for example with the environment variables
+  `JELLYFIN_FFmpeg__analyzeduration=5M` and `JELLYFIN_FFmpeg__probesize=10M`.
+
 
 The inherited guide/keyboard/navigation changes were tested on a Samsung 2021
 TV, **Tizen 6.0 / Chromium 76**, against Jellyfin **12.2**. The manifest's lower
@@ -145,7 +173,8 @@ builds the wrapper, applies guide/navigation adaptations, bundles the theme
 and includes licence notices. It then transpiles remaining modern dependency
 scripts for the TV, preserving the upstream native module entry points.
 The second signs and writes the versioned WGT
-and checksum under `releases/`. Run both again after source changes.
+and checksum under `releases/`. The release version comes from
+`jellyfin-tizen-fixed/config.xml`. Run both again after source changes.
 
 The included source is the corresponding modified source for the distributed
 WGT, not merely a reference to a moving upstream branch.
@@ -156,10 +185,11 @@ WGT, not merely a reference to a moving upstream branch.
 cd jellyfin-web-tizen-fix
 npx vitest run src/components/CustomCss.test.tsx src/components/guide/guide.test.ts
 cd ..
-node --test tizen-guide-validation/keyboard-viewport.test.cjs
+node --test tizen-guide-validation/keyboard-viewport.test.cjs tizen-guide-validation/tizen-device-profile.test.cjs
 python3 scripts/test-release.py
 python3 tizen-guide-validation/build-manual-guide-fixture.py
 python3 tizen-guide-validation/build-home-row-fixture.py
+python3 browser-guide/tests/build-home-banner-fixture.py
 python3 scripts/check-release.py
 ```
 

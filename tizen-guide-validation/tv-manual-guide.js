@@ -6,8 +6,13 @@
     var editingInput = null;
     var keyboardWasOpen = false;
     var inputSelector = '.manual-guide-toolbar input, form.manual-guide-dialog input:not([type=checkbox]), #searchTextInput';
+    // Any field that can open Samsung's keyboard, including sign-in and server address fields.
+    var keyboardSelector = 'input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=button]):not([type=submit]):not([type=reset]):not([type=file]):not([type=color]), textarea';
     function guideInput(target) {
         return target && target.matches && target.matches(inputSelector);
+    }
+    function keyboardInput(target) {
+        return target && target.matches && target.matches(keyboardSelector);
     }
     function prepareInput(input) {
         if (!input.hasAttribute('data-tv-select-to-edit') && !input.readOnly) {
@@ -42,7 +47,7 @@
         if (editingInput && window.innerHeight < inputViewport.height - 100) keyboardWasOpen = true;
         else if (editingInput && keyboardWasOpen) finishEditing();
         var input = document.activeElement;
-        if (!guideInput(input) && window.innerHeight >= inputViewport.height) {
+        if (!keyboardInput(input) && window.innerHeight >= inputViewport.height) {
             document.documentElement.classList.remove('manual-guide-input-active');
             document.documentElement.style.removeProperty('--manual-guide-input-font-size');
             inputViewport = null;
@@ -57,8 +62,8 @@
         }
     }
     document.addEventListener('focusin', function (event) {
-        if (!guideInput(event.target)) return;
-        prepareInput(event.target);
+        if (!keyboardInput(event.target)) return;
+        if (guideInput(event.target)) prepareInput(event.target);
         if (!inputViewport) {
             var root = document.documentElement;
             // Samsung's IME crosses Jellyfin's height-based font breakpoints.
@@ -79,6 +84,11 @@
     window.addEventListener('resize', function () {
         requestAnimationFrame(updateInputViewport);
     });
+    // Keep the sign-in screen plain instead of showing the server's custom splash image.
+    document.addEventListener('pageshow', function (event) {
+        var page = event.target;
+        if (page && page.id === 'loginPage' && page.classList) page.classList.remove('backdropPage');
+    }, true);
     var inputObserver = new MutationObserver(function (records) {
         records.forEach(function (record) {
             Array.prototype.forEach.call(record.addedNodes, function (node) {
@@ -133,9 +143,11 @@
     function focusRow(guide, row, source, preferHeader) {
         var header = channelHeader(guide, row);
         if (preferHeader && header) { header.focus(); return; }
-        var grid = guide.querySelector('.programGrid').getBoundingClientRect();
+        var programGrid = guide.querySelector('.programGrid');
+        var grid = programGrid.getBoundingClientRect();
         var previous = source.getBoundingClientRect();
-        var anchor = Math.max(grid.left + 1, Math.min(grid.right - 1, previous.left + previous.width / 2));
+        // Anchor to the visible start of the current cell; a long program's centre can be hours ahead.
+        var anchor = Math.max(grid.left + 1, Math.min(grid.right - 1, previous.left + 1));
         var candidates = Array.from(row.querySelectorAll('button:not(:disabled):not([hidden]), a[href], .focusable')).filter(function (button) {
             var rect = button.getBoundingClientRect();
             return rect.width > 0 && rect.height > 0 && getComputedStyle(button).visibility !== 'hidden';
@@ -147,7 +159,11 @@
             var delta = anchor < rect.left ? rect.left - anchor : anchor > rect.right ? anchor - rect.right : 0;
             if (delta < distance) { distance = delta; selected = button; }
         });
-        if (selected || header) (selected || header).focus();
+        var target = selected || header;
+        if (!target) return;
+        var scrollLeft = programGrid.scrollLeft;
+        try { target.focus({ preventScroll: true }); } catch (err) { target.focus(); }
+        if (selected && programGrid.scrollLeft !== scrollLeft) programGrid.scrollLeft = scrollLeft;
     }
     function navigateGuide(target, key) {
         if (key !== 'ArrowUp' && key !== 'ArrowDown') return false;
