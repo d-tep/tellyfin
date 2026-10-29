@@ -74,7 +74,7 @@ def check(write_checksum=False):
         required = {'config.xml', 'www/index.html', 'www/ui/tellyfin-theme.css',
                     'www/ui/manual-guide.js', 'www/ui/home-library-navigation.js',
                     'www/ui/home-banner.js', 'www/ui/home-banner.css',
-                    'www/ui/playback-warm.js',
+                    'www/ui/playback-warm.js', 'www/ui/login-background.png',
                     'author-signature.xml', 'signature1.xml', 'www/licenses/ABYSS-LICENSE'}
         for missing in required - set(names):
             issues.append((missing, 'required asset missing'))
@@ -90,6 +90,10 @@ def check(write_checksum=False):
         for marker in ['--abyss-accent', 'manual-guide-input-active', 'manual-guide-toolbar', 'headerButton.show-focus:focus']:
             if marker not in theme:
                 issues.append(('theme', 'required override missing: ' + marker))
+        if archive.read('www/ui/login-background.png') != (ROOT / 'skin/login-background.png').read_bytes():
+            issues.append(('www/ui/login-background.png', 'packaged login image differs from source'))
+        if 'url("login-background.png")' not in theme:
+            issues.append(('theme', 'bundled login background rule missing'))
         client_config = json.loads(archive.read('www/config.json'))
         if client_config.get('servers') or client_config.get('menuLinks'):
             issues.append(('www/config.json', 'preconfigured server or menu links'))

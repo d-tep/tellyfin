@@ -1,6 +1,6 @@
 {
   "name": "Tellyfin",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "basedOnCustomBuild": "0.1.42",
   "jellyfinWeb": {
     "url": "https://github.com/jellyfin/jellyfin-web",

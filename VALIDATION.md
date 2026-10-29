@@ -1,4 +1,36 @@
-# Release validation: Tellyfin 0.1.6
+# Release validation: Tellyfin 0.1.7
+
+Bundles the exact Tellyfin logo/blue-purple wave image selected from the existing
+server as `skin/login-background.png`. The login page loads its packaged copy;
+server splash images remain suppressed and server/user CSS stays isolated.
+The artwork is fixed regardless of the connected server or its branding settings.
+Keyboard viewport safeguards remain intact. No server address or credentials are
+embedded in the package.
+
+Verified for 0.1.7:
+
+- Production Webpack build passed with the existing asset/entrypoint-size warnings.
+- Legacy TV syntax check passed for 990 JavaScript files (three transformations,
+  two upstream native module assets retained).
+- All 11 keyboard/login tests passed, including server-splash suppression.
+- Six release privacy-detector tests passed.
+- A real headless Chrome run of the assembled app at 1920×1080, using Tizen
+  adapter stubs, connected through the normal Add Server flow to the server's
+  public login page. The 1672×941 local image loaded with cover sizing, the TV
+  layout and isolated theme remained active, and resource/API inspection found
+  no Branding/Splashscreen request. The screenshot was visually inspected.
+- Tizen packaging/signing passed with the same author certificate as 0.1.6.
+- The release scan passed for 1,267 WGT entries, including an exact byte match
+  between the packaged PNG, source PNG and selected server image. Identity,
+  offline theme, required assets and SHA-256 checksum passed.
+
+The Node build container omitted Webpack's optional Git commit label because Git
+is unavailable there; the explicit application version is Tellyfin-0.1.7.
+This release has not been installed or checked on a physical TV.
+
+## Previous release checks
+
+### Tellyfin 0.1.6
 
 This release ports selected private 0.1.42 features: floating Live TV guide,
 playback warming, incremental shared-HLS text captions, Guide-key support and

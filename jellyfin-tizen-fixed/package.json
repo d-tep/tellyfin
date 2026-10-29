@@ -1,6 +1,6 @@
 {
   "name": "jellyfin-tizen",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "Jellyfin for Samsung Smart TV (Tizen)",
   "repository": {
     "type": "git",

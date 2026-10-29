@@ -16,6 +16,16 @@ for (const name of overrides) {
     css += '\n' + fs.readFileSync(path.join(root, 'tizen-guide-validation', name), 'utf8');
 }
 css += '\n' + fs.readFileSync(path.join(web, 'ui/manual-guide.css'), 'utf8');
+// Fixed Tellyfin login art, independent of the connected server's branding.
+fs.copyFileSync(path.join(root, 'skin/login-background.png'), path.join(web, 'ui/login-background.png'));
+css += `
+#loginPage {
+    background-image: url("login-background.png") !important;
+    background-size: cover !important;
+    background-position: center !important;
+    background-repeat: no-repeat !important;
+}
+`;
 fs.writeFileSync(path.join(web, 'ui/tellyfin-theme.css'), css);
 let index = fs.readFileSync(path.join(web, 'index.html'), 'utf8');
 index = index.replace(/<link[^>]*id="(?:tv-header-spacing|tv-performance|tv-manual-guide-style)"[^>]*>/g, '');

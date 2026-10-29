@@ -4,11 +4,11 @@ An **unofficial Jellyfin client for Samsung Tizen TVs**, combining a modified
 Jellyfin Web 12.2 client, the Tizen wrapper, a locally bundled Abyss theme and
 remote-control/guide improvements. It is not affiliated with Jellyfin or Samsung.
 
-**Release: 0.1.6**, incorporating selected improvements from private build 0.1.42.
+**Release: 0.1.7**, incorporating selected improvements from private build 0.1.42.
 
 ## Download and install
 
-The distributable is [Tellyfin-0.1.6.wgt](releases/Tellyfin-0.1.6.wgt).
+The distributable is [Tellyfin-0.1.7.wgt](releases/Tellyfin-0.1.7.wgt).
 Verify its SHA-256 against [SHA256SUMS](releases/SHA256SUMS).
 
 You need a Samsung **Tizen** TV, a computer with the Tizen Studio CLI and SDB
@@ -26,7 +26,7 @@ Samsung Certificate Extension may be needed to create your own signing profile.
    ```sh
    sdb connect TV_IP:26101
    sdb devices
-   tizen install -n Tellyfin-0.1.6.wgt -s TV_IP:26101 -- releases
+   tizen install -n Tellyfin-0.1.7.wgt -s TV_IP:26101 -- releases
    tizen run -p TellyfinTV.Tellyfin -s TV_IP:26101
    ```
 
@@ -94,8 +94,9 @@ add-on is not packaged; Home uses Tellyfin's lightweight Continue Watching banne
 - The interface keeps its size when the TV keyboard opens on any text field,
   including server address, sign-in, search, recording and settings fields.
   Sign In and Save buttons stay in place instead of jumping up over the form.
-- The sign-in screen uses a plain background and skips the server's custom
-  splash image; the server's branding setting is left unchanged.
+- The sign-in screen uses Tellyfin's bundled blue/purple wave background and
+  logo. This fixed image is packaged with the app and works with any server;
+  server splash images remain suppressed.
 - Explicit manual recording controls for channels without guide data. Use
   **Save recording** to schedule; Enter in a text field does not implicitly save.
 - Home library shortcuts, stable header focus, static focus outlines and no

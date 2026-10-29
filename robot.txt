@@ -24,6 +24,14 @@ Boundaries
 - upstream.json records upstream revisions and the private build used as reference.
   Keep release versions aligned with config.xml, wrapper package/lockfile and docs.
 
+Login background in 0.1.7
+- skin/login-background.png is the fixed Tellyfin logo/wave artwork explicitly
+  selected by the user from their existing server image. It ships with the app.
+- scripts/bundle-theme.cjs copies it to www/ui/login-background.png and appends
+  the login-page CSS. Keep native server splash suppression in tv-manual-guide.js;
+  neither server splash images nor server/user CSS should replace this artwork.
+- check-release.py checks the packaged image against the source asset.
+
 Selected private optimizations in 0.1.6 (reference private 0.1.42)
 - Floating Live TV guide in legacy playback view, styled programme/channel grid,
   guarded local-TV session lifecycle and native Samsung Guide key support.

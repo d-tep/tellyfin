@@ -84,7 +84,7 @@
     window.addEventListener('resize', function () {
         requestAnimationFrame(updateInputViewport);
     });
-    // Keep the sign-in screen plain instead of showing the server's custom splash image.
+    // Keep server splash images suppressed; Tellyfin uses its own bundled login art.
     document.addEventListener('pageshow', function (event) {
         var page = event.target;
         if (page && page.id === 'loginPage' && page.classList) page.classList.remove('backdropPage');
