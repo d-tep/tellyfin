@@ -80,7 +80,7 @@
         console.log.apply(console, arguments);
     }
 
-    function buildTizenDeviceProfile(profileBuilder, options) {
+    function buildTizenDeviceProfile(profileBuilder, options, shortSegments) {
         var profile = profileBuilder(options);
 
         // New web clients ignore enableMkvProgressive; keep the TV's remux requirement.
@@ -96,6 +96,21 @@
         }).filter(function (directProfile) {
             return directProfile.Container !== '';
         });
+
+        if (shortSegments && profile.TranscodingProfiles) {
+            // Native TV HLS buffering multiplies long segments into slow starts.
+            // Keep explicit segment settings; prefer H.264 for the native TV HLS player.
+            profile.TranscodingProfiles = profile.TranscodingProfiles.map(function (stream) {
+                if (stream.Type !== 'Video' || stream.Protocol !== 'hls'
+                    || stream.Context !== 'Streaming') {
+                    return stream;
+                }
+                return Object.assign({}, stream, {
+                    SegmentLength: stream.SegmentLength == null ? 2 : stream.SegmentLength,
+                    VideoCodec: 'h264'
+                });
+            });
+        }
 
         return profile;
     }
@@ -141,7 +156,7 @@
 
             getDeviceProfile: function (profileBuilder) {
                 postMessage('AppHost.getDeviceProfile');
-                return buildTizenDeviceProfile(profileBuilder, { enableMkvProgressive: false, enableSsaRender: true });
+                return buildTizenDeviceProfile(profileBuilder, { enableMkvProgressive: false, enableSsaRender: true }, true);
             },
 
             getSyncProfile: function (profileBuilder) {
@@ -207,7 +222,27 @@
         tizen.tvinputdevice.registerKey('MediaTrackNext');
         tizen.tvinputdevice.registerKey('MediaRewind');
         tizen.tvinputdevice.registerKey('MediaFastForward');
+        try {
+            tizen.tvinputdevice.registerKey('Guide');
+        } catch (error) {
+            console.log('Guide key is unavailable; use the player Guide button.');
+        }
     });
+
+    // Let the playback view consume Guide without leaving the playing channel.
+    window.addEventListener('keydown', function (event) {
+        if (event.keyCode !== 458 && event.key !== 'Guide') return;
+        var target = document.activeElement || document.body;
+        var command = new CustomEvent('command', {
+            detail: { command: 'guide' },
+            bubbles: true,
+            cancelable: true
+        });
+        if (!target.dispatchEvent(command)) {
+            event.preventDefault();
+            event.stopImmediatePropagation();
+        }
+    }, true);
 
     function updateKeys() {
         if (location.hash.indexOf('/queue') !== -1 || location.hash.indexOf('/video') !== -1) {

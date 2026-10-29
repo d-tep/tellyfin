@@ -33,12 +33,44 @@ import { ServerConnections } from 'lib/jellyfin-apiclient';
 import LibraryMenu from 'scripts/libraryMenu';
 import { setBackdropTransparency, TRANSPARENCY_LEVEL } from 'components/backdrop/backdrop';
 import { pluginManager } from 'components/pluginManager';
+import openFloatingGuide from 'components/guide/floatingGuide';
 
 function getOpenedDialog() {
     return document.querySelector('.dialogContainer .dialog.opened');
 }
 
 export default function (view) {
+    let floatingGuide = null;
+    let floatingGuideItemId = null;
+    let restoreGuideFocus = true;
+
+    function closeFloatingGuide(restoreFocus) {
+        restoreGuideFocus = restoreFocus;
+        floatingGuide?.close();
+    }
+
+    function showFloatingGuide() {
+        if (floatingGuide) {
+            closeFloatingGuide(true);
+            return;
+        }
+        if (currentItem?.Type !== 'TvChannel' || !currentPlayer?.isLocalPlayer || getOpenedDialog()) return;
+        const item = currentItem;
+        restoreGuideFocus = true;
+        floatingGuideItemId = item.Id;
+        hideOsd();
+        floatingGuide = openFloatingGuide({
+            apiClient: ServerConnections.getApiClient(item.ServerId),
+            channelId: item.Id,
+            onTune: id => playbackManager.play({ ids: [id], serverId: item.ServerId }),
+            onClose: () => {
+                floatingGuide = null;
+                floatingGuideItemId = null;
+                if (restoreGuideFocus) showOsd(view.querySelector('.btnFloatingGuide'));
+            }
+        });
+    }
+
     function getDisplayItem(item) {
         if (item.Type === 'TvChannel') {
             const apiClient = ServerConnections.getApiClient(item.ServerId);
@@ -188,6 +220,8 @@ export default function (view) {
     function updateNowPlayingInfo(player, state) {
         const item = state.NowPlayingItem;
 
+        if (floatingGuide && item?.Id !== floatingGuideItemId) closeFloatingGuide(false);
+        view.querySelector('.btnFloatingGuide').classList.toggle('hide', item?.Type !== 'TvChannel' || !player?.isLocalPlayer);
         currentItem = item;
         if (!item) {
             updateRecordingButton(null);
@@ -270,6 +304,7 @@ export default function (view) {
     let mouseIsDown = false;
 
     function showOsd(focusElement) {
+        if (floatingGuide) return;
         Events.trigger(document, EventType.SHOW_VIDEO_OSD, [ true ]);
         slideDownToShow(headerElement);
         showMainOsdControls(focusElement);
@@ -409,6 +444,13 @@ export default function (view) {
 
     function onInputCommand(e) {
         const player = currentPlayer;
+
+        if (e.detail.command === 'guide' && currentItem?.Type === 'TvChannel' && player?.isLocalPlayer) {
+            e.preventDefault();
+            showFloatingGuide();
+            return;
+        }
+        if (floatingGuide) return;
 
         switch (e.detail.command) {
             case 'left':
@@ -552,6 +594,7 @@ export default function (view) {
     }
 
     function onPlaybackStopped(e, state) {
+        closeFloatingGuide(false);
         currentRuntimeTicks = null;
         resetUpNextDialog();
         console.debug('nowplaying event: ' + e.type);
@@ -1215,6 +1258,7 @@ export default function (view) {
     }
 
     function onKeyDown(e) {
+        if (floatingGuide) return;
         clickedElement = e.target;
 
         const isKeyModified = e.ctrlKey || e.altKey || e.metaKey;
@@ -1223,6 +1267,13 @@ export default function (view) {
         if (isKeyModified) return;
 
         const key = keyboardnavigation.getKeyName(e);
+
+        if (key === 'KeyG' && currentItem?.Type === 'TvChannel' && currentPlayer?.isLocalPlayer) {
+            e.preventDefault();
+            e.stopPropagation();
+            showFloatingGuide();
+            return;
+        }
 
         const btnPlayPause = osdBottomElement.querySelector('.btnPause');
 
@@ -1714,6 +1765,7 @@ export default function (view) {
         }
     });
     view.addEventListener('viewbeforehide', function () {
+        closeFloatingGuide(false);
         if (statsOverlay) {
             statsOverlay.enabled(false);
         }
@@ -1772,6 +1824,7 @@ export default function (view) {
         playbackManager.toggleAirPlay(currentPlayer);
     });
     view.querySelector('.btnVideoOsdSettings').addEventListener('click', onSettingsButtonClick);
+    view.querySelector('.btnFloatingGuide').addEventListener('click', showFloatingGuide);
     view.addEventListener('viewhide', function () {
         clearHideAnimationEventListeners(headerElement);
         headerElement.classList.remove('hide');

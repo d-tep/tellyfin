@@ -14,6 +14,7 @@ cd "$root"
 node tizen-guide-validation/use-standard-abyss.cjs
 node tizen-guide-validation/build-manual-guide.cjs
 node tizen-guide-validation/build-home-banner.cjs
+node tizen-guide-validation/build-playback-warm.cjs
 node scripts/bundle-theme.cjs
 node scripts/ensure-tv-syntax.cjs
 echo 'Unsigned app prepared in jellyfin-tizen-fixed/. Sign with: sh scripts/package.sh PROFILE'

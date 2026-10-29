@@ -15,8 +15,31 @@ function getAppHost() {
     return context.window.NativeShell.AppHost;
 }
 
+test('TV streaming defaults to shorter HLS segments without changing source profiles or explicit settings', () => {
+    const host = getAppHost();
+    const profiles = [
+        { Type: 'Video', Context: 'Streaming', Protocol: 'hls', Container: 'ts', MinSegments: '1' },
+        { Type: 'Video', Context: 'Streaming', Protocol: 'hls', Container: 'mp4', SegmentLength: 1 },
+        { Type: 'Video', Context: 'Streaming', Protocol: 'http', Container: 'mp4' },
+        { Type: 'Audio', Context: 'Streaming', Protocol: 'hls' },
+        { Type: 'Video', Context: 'Static', Protocol: 'hls' }
+    ];
+    const before = JSON.stringify(profiles);
+    const result = host.getDeviceProfile(() => ({ DirectPlayProfiles: [], TranscodingProfiles: profiles }));
+    assert.equal(result.TranscodingProfiles[0].SegmentLength, 2);
+    assert.equal(result.TranscodingProfiles[0].MinSegments, '1');
+    assert.equal(result.TranscodingProfiles[0].VideoCodec, 'h264');
+    assert.equal(result.TranscodingProfiles[1].SegmentLength, 1);
+    assert.equal(result.TranscodingProfiles[2].SegmentLength, undefined);
+    assert.equal(result.TranscodingProfiles[3].SegmentLength, undefined);
+    assert.equal(result.TranscodingProfiles[4].SegmentLength, undefined);
+    assert.equal(JSON.stringify(profiles), before);
+    const sync = host.getSyncProfile(() => ({ DirectPlayProfiles: [], TranscodingProfiles: profiles }));
+    assert.strictEqual(sync.TranscodingProfiles, profiles);
+});
+
 for (const method of ['getDeviceProfile', 'getSyncProfile']) {
-    test(`${method} excludes MKV video without forcing video or audio encoding`, () => {
+    test(`${method} retains MKV remux rules and existing audio capabilities`, () => {
         const host = getAppHost();
         const original = {
             DirectPlayProfiles: [
@@ -39,7 +62,7 @@ for (const method of ['getDeviceProfile', 'getSyncProfile']) {
             { Container: 'hls', Type: 'Video' },
             { Container: 'mkv', Type: 'Audio' }
         ]);
-        assert.strictEqual(result.TranscodingProfiles, transcodingProfiles);
+        assert.deepEqual(JSON.parse(JSON.stringify(result.TranscodingProfiles)), transcodingProfiles);
         assert.strictEqual(result.CodecProfiles, codecProfiles);
         assert.equal(options.enableMkvProgressive, false);
         assert.equal(options.enableSsaRender, method === 'getDeviceProfile' ? true : undefined);

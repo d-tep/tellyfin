@@ -1,0 +1,168 @@
+.floatingLiveGuide {
+    position: fixed !important;
+    top: auto !important;
+    right: 2vw !important;
+    bottom: 2vh !important;
+    left: 2vw !important;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+    width: 96vw !important;
+    height: 54vh !important;
+    max-width: none !important;
+    max-height: none !important;
+    margin: 0 !important;
+    padding: 0.8em;
+    border: 1px solid #657080;
+    border-radius: 0.5em;
+    background: rgba(12, 18, 27, 0.96);
+    color: #fff;
+    font-size: 0.8rem;
+    text-align: left;
+    transform: none !important;
+
+    button {
+        min-width: 44px;
+        min-height: 44px;
+        box-sizing: border-box;
+        border: 2px solid transparent;
+        border-radius: 0.2em;
+        background: #263344;
+        color: inherit;
+        font: inherit;
+        cursor: pointer;
+    }
+}
+
+.floatingGuideHeader {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: space-between;
+
+    h2 {
+        margin: 0 0.6em 0 0;
+        font-size: 1.25em;
+    }
+}
+
+.floatingGuideActions {
+    display: flex;
+
+    button {
+        margin-left: 0.4em;
+        padding: 0.35em 0.7em;
+    }
+}
+
+.floatingGuideDetail {
+    flex-shrink: 0;
+    height: 2.7em;
+    margin: 0.4em 0;
+    overflow: hidden;
+    line-height: 1.35;
+}
+
+.floatingGuideTimes {
+    display: flex;
+    flex-shrink: 0;
+    margin: 0 0.6em 0.3em 13.5em;
+
+    span {
+        width: 25%;
+        font-size: 0.85em;
+    }
+}
+
+.floatingGuideRows {
+    position: relative;
+    flex: 1 1 0;
+    min-height: 0;
+    overflow: auto;
+    overscroll-behavior: contain;
+}
+
+.floatingGuideRow {
+    display: flex;
+    height: 3.1em;
+    min-height: 48px;
+    padding-bottom: 0.25em;
+}
+
+.floatingGuideChannel {
+    flex: 0 0 13em;
+    overflow: hidden;
+    padding: 0.35em;
+    text-align: left;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+
+    &[aria-current] { color: #70dcff; }
+}
+
+// A distinct label column leaves the timeline easy to scan.
+.floatingLiveGuide .floatingGuideChannel {
+    margin-right: 0.5em;
+    border-color: #52667d;
+    background: #172333;
+    font-weight: 600;
+}
+
+.floatingGuidePrograms {
+    position: relative;
+    flex: 1;
+    min-width: 0;
+}
+
+.floatingGuideProgram {
+    position: absolute;
+    top: 0;
+    height: 100%;
+    min-width: 0 !important;
+    overflow: hidden;
+    padding: 0.35em;
+    text-align: left;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.floatingGuideEmpty {
+    width: 100%;
+    height: 100%;
+    text-align: left;
+    padding-left: 0.6em;
+}
+
+// Insets and dark gutters separate adjacent programmes without moving
+// their time-based positions. Existing focus and current-channel colours stay.
+.floatingLiveGuide .floatingGuideProgram,
+.floatingLiveGuide .floatingGuideEmpty {
+    border-color: #0c121b;
+    border-radius: 0.35em;
+    box-shadow: inset 0 0 0 1px #63758c;
+    padding: 0.45em 0.65em;
+}
+
+.floatingGuideStatus {
+    flex-shrink: 0;
+    min-height: 1.4em;
+    margin-top: 0.4em;
+    font-size: 0.8em;
+}
+
+@media (max-width: 800px) {
+    .floatingLiveGuide { height: 65vh !important; }
+    .floatingGuideHeader { flex-wrap: wrap; }
+    .floatingGuideActions { margin-top: 0.4em; }
+    .floatingGuideChannel { flex-basis: 8em; }
+    .floatingGuideTimes { margin-left: 8.5em; }
+}
+
+.floatingLiveGuide button:focus {
+    border-color: #fff;
+    outline: 2px solid #00a4dc;
+    outline-offset: -4px;
+    background: #164c68;
+}
+
+.floatingLiveGuide button:disabled { opacity: 0.4; }

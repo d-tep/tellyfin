@@ -1,0 +1,57 @@
+Tellyfin architecture and maintenance reference
+Updated: 2026-10-30
+
+This is an agent reference, not a crawler robots.txt. Read README.md for setup.
+This repository is a standalone distributable, distinct from ../jellyfin and its
+ignored private TV repositories. Do not overwrite it with the private app tree.
+
+Boundaries
+- jellyfin-web-tizen-fix/: full modified Jellyfin Web 12.2 client, not a submodule.
+  src/components/CustomCss.tsx loads the bundled theme and MUST retain isolation
+  from server/user CSS. Keep its theme-isolation test.
+- jellyfin-tizen-fixed/: wrapper, manifest, local entry point and remote keys.
+  Identity TellyfinTV.Tellyfin must remain separate from JfGuideFx1.Jellyfin.
+- browser-guide/: local copies of reusable browser extension source; not a symlink.
+- tizen-guide-validation/: TV navigation/keyboard overrides and offline tests.
+- skin/: pinned Abyss source/licence, adapted to offline fonts/icons.
+- scripts/build.sh installs lockfiles, builds Web with two workers, assembles the
+  wrapper, applies TV extensions/warming, bundles theme/licences and validates
+  legacy syntax. ensure-tv-syntax.cjs preserves upstream native module exceptions;
+  do not replace it with the private app's simpler ES5 checker.
+- scripts/package.sh PROFILE uses Tizen CLI, writes a versioned development-signed
+  WGT and invokes check-release.py. A Web build alone is not a signed package.
+- releases/: WGTs and current SHA256SUMS; preserve earlier packages as rollback.
+- upstream.json records upstream revisions and the private build used as reference.
+  Keep release versions aligned with config.xml, wrapper package/lockfile and docs.
+
+Selected private optimizations in 0.1.6 (reference private 0.1.42)
+- Floating Live TV guide in legacy playback view, styled programme/channel grid,
+  guarded local-TV session lifecycle and native Samsung Guide key support.
+- playback-warm.js after 1.5 s focus/hover dwell; plugin retains bounded native probe
+  reuse and error invalidation. Never cache sessions or embed credentials.
+- Shared captions require protocol 2 and SharedPlayback=true. Only eligible HTTP
+  VOD transcodes with SRT/VTT/mov_text use existing HLS FFmpeg WebVTT output.
+  No extra provider read; absolute source timestamps prevent double seek offsets.
+  Incremental parsing, stale-response cancellation, bounded retries and disposal
+  preserve delivered cues/track state. Unsupported paths use standard delivery.
+- Two-second streaming HLS segments (explicit settings preserved) and H.264
+  preference; do not force the private temporary 720p/4-Mbps quality experiment.
+  Sync profiles and audio codec capabilities remain unchanged.
+- Provider retry/shim, plugin upgrades, encoding presets and server mounts belong
+  to ../jellyfin, not this client. Never copy runtime server config into a release.
+
+Checks
+- npm test -- src/components/CustomCss.test.tsx src/components/guide/guide.test.ts
+  src/components/guide/floatingGuide.test.ts src/utils/remoteSubtitleStream.test.ts
+  (run from jellyfin-web-tizen-fix); npm run build:check.
+- node --test tizen-guide-validation/keyboard-viewport.test.cjs
+  tizen-guide-validation/tizen-device-profile.test.cjs
+  tizen-guide-validation/floating-guide-key.test.cjs
+- python3 scripts/test-release.py; python3 scripts/check-release.py.
+- Generated HTML fixtures must run in a browser and report PASS; generation alone
+  does not exercise browser assertions. WGT syntax checks do not prove playback.
+- Do not claim on-device installation/validation from a build or inherited private
+  app results. Test real first English caption, seeks and rollover separately.
+- Inspect pending work before cleanup; commit corresponding source with its WGT.
+  Never commit local paths, credentials, provider links, keys, logs or databases.
+  Signing profiles stay outside Git. Keep licences and theme isolation intact.

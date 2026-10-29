@@ -4,11 +4,11 @@ An **unofficial Jellyfin client for Samsung Tizen TVs**, combining a modified
 Jellyfin Web 12.2 client, the Tizen wrapper, a locally bundled Abyss theme and
 remote-control/guide improvements. It is not affiliated with Jellyfin or Samsung.
 
-**Release: 0.1.3**, based on the custom guide build 0.1.33.
+**Release: 0.1.6**, incorporating selected improvements from private build 0.1.42.
 
 ## Download and install
 
-The distributable is [Tellyfin-0.1.3.wgt](releases/Tellyfin-0.1.3.wgt).
+The distributable is [Tellyfin-0.1.6.wgt](releases/Tellyfin-0.1.6.wgt).
 Verify its SHA-256 against [SHA256SUMS](releases/SHA256SUMS).
 
 You need a Samsung **Tizen** TV, a computer with the Tizen Studio CLI and SDB
@@ -26,7 +26,7 @@ Samsung Certificate Extension may be needed to create your own signing profile.
    ```sh
    sdb connect TV_IP:26101
    sdb devices
-   tizen install -n Tellyfin-0.1.3.wgt -s TV_IP:26101 -- releases
+   tizen install -n Tellyfin-0.1.6.wgt -s TV_IP:26101 -- releases
    tizen run -p TellyfinTV.Tellyfin -s TV_IP:26101
    ```
 
@@ -128,6 +128,40 @@ If unavailable, the UI reports it; channel search and guide-status filtering
 remain usable. No plugin binary, provider subscription or provider configuration
 is included here. The full custom plugin fork is a separate server-side project.
 
+Version 0.1.6 requires protocol 2 with `SharedPlayback=true` from the fork's
+`XtreamLibrary/StreamingSubtitles/Capabilities` endpoint (plugin 2.0.11.8).
+For eligible HTTP VOD transcoding, embedded SRT/VTT/mov_text captions come from
+the **existing HLS FFmpeg process**, avoiding the older client's extra provider
+connection. Completed cues are parsed incrementally without reparsing delivered
+text or toggling native track visibility on every chunk. Absolute source times
+remain stable across overlapping windows, resume and seeks. Track changes and
+seeks cancel stale requests. Temporary failures retry twice with 5/10-second
+backoff; authorization failures report an error immediately. The standard
+subtitle-offset control remains available for a source-specific mismatch.
+
+Direct playback, ASS/SSA, external files, Live TV, bitmap subtitles and servers
+without shared-playback support retain standard subtitle delivery. Bitmap
+subtitles may require expensive burn-in and should be tested separately.
+
+### Playback startup and floating guide
+
+Movie/episode thumbnails prepare a native media probe after 1.5 seconds of
+hover/focus; series thumbnails resolve the signed-in user's next episode. This
+requires the matching server plugin for probe reuse and does not start video or
+reuse playback sessions. Server-side limits and failure invalidation remain in
+force. Bounded numeric launch timings help diagnose startup.
+
+During local Live TV playback, press **Guide**, **G**, or the player's Guide
+button. The overlay lets you browse without interrupting playback; select a
+channel/current programme to tune. Back/Escape closes it, and future programmes
+show information. API failures leave playback running. It stays hidden for
+movies, episodes and playback on another device.
+
+Native streaming HLS profiles default to **two-second segments** and prefer
+**H.264**, preserving explicit segment lengths and audio support. Offline sync
+profiles are unchanged. Tellyfin does not include the private app's temporary
+720p/4-Mbps cap; choose quality for your own server, TV and network.
+
 ## Compatibility and validation
 
 ### Slow movie startup on the server side
@@ -169,9 +203,9 @@ sh scripts/package.sh YOUR_PROFILE
 ```
 
 The first command installs dependencies with `npm ci`, builds Jellyfin Web,
-builds the wrapper, applies guide/navigation adaptations, bundles the theme
-and includes licence notices. It then transpiles remaining modern dependency
-scripts for the TV, preserving the upstream native module entry points.
+builds the wrapper, applies guide/navigation adaptations and playback warming,
+bundles the theme and includes licence notices. It then transpiles remaining
+modern dependency scripts for the TV, preserving the upstream native module entry points.
 The second signs and writes the versioned WGT
 and checksum under `releases/`. The release version comes from
 `jellyfin-tizen-fixed/config.xml`. Run both again after source changes.
@@ -183,9 +217,10 @@ WGT, not merely a reference to a moving upstream branch.
 
 ```sh
 cd jellyfin-web-tizen-fix
-npx vitest run src/components/CustomCss.test.tsx src/components/guide/guide.test.ts
+npm test -- src/components/CustomCss.test.tsx src/components/guide/guide.test.ts src/components/guide/floatingGuide.test.ts src/utils/remoteSubtitleStream.test.ts
+npm run build:check
 cd ..
-node --test tizen-guide-validation/keyboard-viewport.test.cjs tizen-guide-validation/tizen-device-profile.test.cjs
+node --test tizen-guide-validation/keyboard-viewport.test.cjs tizen-guide-validation/tizen-device-profile.test.cjs tizen-guide-validation/floating-guide-key.test.cjs
 python3 scripts/test-release.py
 python3 tizen-guide-validation/build-manual-guide-fixture.py
 python3 tizen-guide-validation/build-home-row-fixture.py
@@ -202,6 +237,8 @@ Do not add real configuration, databases, playlists, tokens, logs, STRM output
 or certificates. Re-run release checks and review `git diff --cached` before
 pushing. Automated scanning is a safeguard, not a guarantee against arbitrary
 secrets. Replace any release package only after reviewing its contents.
+
+Architecture and agent maintenance notes are in [robot.txt](robot.txt).
 
 ## Project layout
 

@@ -74,6 +74,7 @@ def check(write_checksum=False):
         required = {'config.xml', 'www/index.html', 'www/ui/tellyfin-theme.css',
                     'www/ui/manual-guide.js', 'www/ui/home-library-navigation.js',
                     'www/ui/home-banner.js', 'www/ui/home-banner.css',
+                    'www/ui/playback-warm.js',
                     'author-signature.xml', 'signature1.xml', 'www/licenses/ABYSS-LICENSE'}
         for missing in required - set(names):
             issues.append((missing, 'required asset missing'))

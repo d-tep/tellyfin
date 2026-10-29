@@ -44,6 +44,8 @@ import { setBackdropTransparency, TRANSPARENCY_LEVEL } from '../../components/ba
 import Events from '../../utils/events.ts';
 import { includesAny } from '../../utils/container.ts';
 import { isHls } from '../../utils/mediaSource.ts';
+import alert from '../../components/alert';
+import { RemoteSubtitleStream } from './remoteSubtitleStream';
 
 const NATIVE_UNSUPPORTED_SUBTITLE_CODECS = ['ssa', 'ass', 'pgssub', 'dvdsub', 'vobsub'];
 const ASS_SUBTITLE_CODECS = ['ssa', 'ass'];
@@ -231,6 +233,7 @@ const VOBSUB_DEBAND_RANGE = 15;
 const SECONDARY_TEXT_TRACK_INDEX = 1;
 
 export class HtmlVideoPlayer {
+    #remoteSubtitleStreams = new Map();
     /**
      * @type {string}
      */
@@ -1299,6 +1302,12 @@ export class HtmlVideoPlayer {
      * @private
      */
     destroyCustomTrack(videoElement, targetTrackIndex) {
+        this.#remoteSubtitleStreams.forEach((stream, index) => {
+            if (targetTrackIndex === undefined || index === targetTrackIndex) {
+                stream.dispose();
+                this.#remoteSubtitleStreams.delete(index);
+            }
+        });
         if (targetTrackIndex === undefined) {
             this.endPendingSubtitleLoad(PRIMARY_TEXT_TRACK_INDEX);
             this.endPendingSubtitleLoad(SECONDARY_TEXT_TRACK_INDEX);
@@ -1627,6 +1636,13 @@ export class HtmlVideoPlayer {
      * @private
      */
     async renderTracksEvents(videoElement, track, item, targetTextTrackIndex = PRIMARY_TEXT_TRACK_INDEX) {
+        const source = this._currentPlayOptions.mediaSource;
+        if (browser.tizen && this._currentPlayOptions.playMethod === 'Transcode'
+            && source.Protocol === 'Http' && !source.IsInfiniteStream && !track.IsExternal
+            && ['subrip', 'srt', 'webvtt', 'vtt', 'mov_text'].includes((track.Codec || '').toLowerCase())
+            && await this.renderRemoteSubtitleStream(videoElement, track, item, targetTextTrackIndex)) {
+            return;
+        }
         if (!itemHelper.isLocalItem(item) || track.IsExternal) {
             const format = (track.Codec || '').toLowerCase();
             if (ASS_SUBTITLE_CODECS.includes(format)) {
@@ -1648,27 +1664,7 @@ export class HtmlVideoPlayer {
             }
         }
 
-        let trackElement = null;
-        const updatingTrack = videoElement.textTracks && videoElement.textTracks.length > (this.isSecondaryTrack(targetTextTrackIndex) ? 1 : 0);
-        if (updatingTrack) {
-            trackElement = videoElement.textTracks[targetTextTrackIndex];
-            // This throws an error in IE, but is fine in chrome
-            // In IE it's not necessary anyway because changing the src seems to be enough
-            try {
-                trackElement.mode = 'showing';
-                while (trackElement.cues.length) {
-                    trackElement.removeCue(trackElement.cues[0]);
-                }
-            } catch (e) {
-                console.error('error removing cue from textTrack', e);
-            }
-
-            trackElement.mode = 'disabled';
-        } else {
-            // There is a function addTextTrack but no function for removeTextTrack
-            // Therefore we add ONE element and replace its cue data
-            trackElement = videoElement.addTextTrack('subtitles', 'manualTrack', 'und');
-        }
+        const trackElement = this.prepareTextTrack(videoElement, targetTextTrackIndex);
 
         // download the track json
         this.fetchSubtitles(track, item).then(data => {
@@ -1701,6 +1697,80 @@ export class HtmlVideoPlayer {
 
             trackElement.mode = 'showing';
         });
+    }
+
+    async renderRemoteSubtitleStream(videoElement, track, item, targetTextTrackIndex) {
+        const apiClient = ServerConnections.getApiClient(item);
+        const pending = {
+            active: true,
+            dispose() { this.active = false; }
+        };
+        this.#remoteSubtitleStreams.set(targetTextTrackIndex, pending);
+        try {
+            const capabilities = await apiClient.getJSON(apiClient.getUrl('XtreamLibrary/StreamingSubtitles/Capabilities'));
+            if (!pending.active) return true;
+            if (capabilities.Version !== 2) throw new Error('Unsupported remote subtitle protocol');
+            if (capabilities.SharedPlayback !== true) {
+                this.#remoteSubtitleStreams.delete(targetTextTrackIndex);
+                return false;
+            }
+        } catch (error) {
+            if (!pending.active) return true;
+            this.#remoteSubtitleStreams.delete(targetTextTrackIndex);
+            if (error.status === 404) {
+                console.warn('Server does not support streaming remote subtitles; using standard subtitle delivery');
+                return false;
+            }
+            console.error('Unable to initialize remote subtitles', error);
+            alert(globalize.translate('ErrorDefault'));
+            return true;
+        }
+        const source = this._currentPlayOptions.mediaSource;
+        const textTrack = this.prepareTextTrack(videoElement, targetTextTrackIndex);
+        const stream = new RemoteSubtitleStream({
+            video: videoElement,
+            track: textTrack,
+            url: start => apiClient.getUrl(`XtreamLibrary/StreamingSubtitles/${item.Id}/${encodeURIComponent(source.Id)}/${track.Index}/Stream.vtt`, {
+                startSeconds: start,
+                ApiKey: apiClient.accessToken()
+            }),
+            position: () => videoElement.currentTime + (this._currentPlayOptions.transcodingOffsetTicks || 0) / 10000000,
+            offset: () => (this._currentPlayOptions.transcodingOffsetTicks || 0) / 10000000
+                + (this.isSecondaryTrack(targetTextTrackIndex) ? this.#secondaryTrackOffset : this.#currentTrackOffset),
+            duration: () => source.RunTimeTicks ? source.RunTimeTicks / 10000000 : Infinity,
+            onError: error => {
+                console.error('Unable to stream remote subtitles', error);
+                alert(globalize.translate('ErrorDefault'));
+            }
+        });
+        this.#remoteSubtitleStreams.set(targetTextTrackIndex, stream);
+        return true;
+    }
+
+    prepareTextTrack(videoElement, targetTextTrackIndex) {
+        let trackElement = null;
+        const updatingTrack = videoElement.textTracks && videoElement.textTracks.length > (this.isSecondaryTrack(targetTextTrackIndex) ? 1 : 0);
+        if (updatingTrack) {
+            trackElement = videoElement.textTracks[targetTextTrackIndex];
+            // This throws an error in IE, but is fine in chrome
+            // In IE it's not necessary anyway because changing the src seems to be enough
+            try {
+                trackElement.mode = 'showing';
+                while (trackElement.cues.length) {
+                    trackElement.removeCue(trackElement.cues[0]);
+                }
+            } catch (e) {
+                console.error('error removing cue from textTrack', e);
+            }
+
+            trackElement.mode = 'disabled';
+        } else {
+            // There is a function addTextTrack but no function for removeTextTrack
+            // Therefore we add ONE element and replace its cue data
+            trackElement = videoElement.addTextTrack('subtitles', 'manualTrack', 'und');
+        }
+
+        return trackElement;
     }
 
     /**
